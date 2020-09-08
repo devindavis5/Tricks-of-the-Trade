@@ -1,0 +1,56 @@
+Quick Penny
+
+This app aids users in stock interactions, providing a seamless stock exchange experience.
+
+Interactions:
+
+stock has many transactions
+user has many transactions
+transaction belongs to a stock and to a user
+
+User Stories:
+
+1. As a user, I want to enter a stock name and be returned information about that stock.
+2. As a user, I want to be able to purchase and sell stock (create transactions).
+3. As a user, I want to be able to create my account.
+4. As a user, I should be able to update my balance & contact info.
+5. As a user, I should be able to favorite the stocks I want to follow.
+6. As a user, I should be able to delete favorited stocks.
+7. As a user, I should be able to read my balance, which is updated in real-time.
+
+Stretch Goals:
+
+1. Stock values should return real-time stock data.
+2. Users should be able to recall information on previous transactions.
+3. Interactable ??? (How can we create a user interface?)
+
+
+Example Tables:   
+   
+create_table :stocks do | t | 
+  t.string :name
+  t.string :industry
+  t.integer :dividend
+  t.integer :value/cost
+end
+
+create_table :transactions do | t | 
+  t.integer :stock_id
+  t.integer :user_id
+  t.integer :amount/cost
+  t.time :time #data type? timestamp..adjust time to user-friendly format
+end
+
+create_table :users do | t | 
+  t.string :name
+  t.string :email
+  t.string :password
+  t.integer :balance
+end
+
+create_table :favorited_stocks do | t | 
+  t.integer :stock_id
+  t.integer :user_id
+end
+
+
