@@ -13,20 +13,19 @@
 ActiveRecord::Schema.define(version: 2020_09_08_194757) do
 
   create_table "favorited_stocks", force: :cascade do |t|
-    t.integer "stock_id"
     t.integer "user_id"
+    t.integer "stock_id"
   end
 
   create_table "stocks", force: :cascade do |t|
     t.string "name"
     t.string "industry"
-    t.integer "dividend"
     t.integer "cost"
   end
 
   create_table "transactions", force: :cascade do |t|
-    t.integer "stock_id"
     t.integer "user_id"
+    t.integer "stock_id"
     t.integer "unit_cost"
     t.integer "quantity"
     t.time "time"
