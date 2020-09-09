@@ -12,21 +12,16 @@
 
 ActiveRecord::Schema.define(version: 2020_09_08_194757) do
 
-  create_table "favorited_stocks", force: :cascade do |t|
-    t.integer "user_id"
-    t.integer "stock_id"
-  end
-
   create_table "stocks", force: :cascade do |t|
     t.string "name"
     t.string "industry"
-    t.integer "cost"
+    t.float "cost"
   end
 
   create_table "transactions", force: :cascade do |t|
     t.integer "user_id"
     t.integer "stock_id"
-    t.integer "unit_cost"
+    t.float "unit_cost"
     t.integer "quantity"
     t.time "time"
   end
@@ -35,7 +30,12 @@ ActiveRecord::Schema.define(version: 2020_09_08_194757) do
     t.string "name"
     t.string "email"
     t.string "password"
-    t.integer "balance"
+    t.float "balance"
+  end
+
+  create_table "watchlists", force: :cascade do |t|
+    t.integer "user_id"
+    t.integer "stock_id"
   end
 
 end
