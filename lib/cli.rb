@@ -1,8 +1,9 @@
 require 'pry'
 $prompt = TTY::Prompt.new
+require 'colorize'
 
     def greet
-        p "Welcome to Tricks of the Trade!"
+        puts "Welcome to Tricks of the Trade!".colorize(:light_blue)
         if $prompt.yes?("Do you have an existing account?")
             user_login
         else
@@ -48,7 +49,7 @@ $prompt = TTY::Prompt.new
         elsif response.downcase == $user_object.email.downcase
             greet_with_name($user_object.name)
         else
-            p "I'm sorry, that response was not recognized. Returning you to login screen."
+            puts "I'm sorry, that response was not recognized. Returning you to login screen.".colorize(:red)
             user_login
         end
     end
@@ -76,7 +77,7 @@ $prompt = TTY::Prompt.new
 
     def get_stock_info(name)
         stock = Stock.find_by(name: "#{name}")
-        p "#{name} is in the #{stock.industry} industry with a cost of $#{stock.cost} per share."
+        puts "#{name} is in the #{stock.industry} industry with a cost of $#{stock.cost} per share.".colorize(:light_blue)
         purchase = $prompt.yes?("Would you like to purchase this stock?")
         if purchase
             purchase_stock(stock)
@@ -92,9 +93,9 @@ $prompt = TTY::Prompt.new
         total = (quantity.to_i * stock.cost).round(2)
         if $prompt.yes?("Your total for #{quantity} shares of #{stock.name} comes to $#{total}. Please confirm you would like to proceed.")
             Transaction.create(user_id: $user_object.id, stock_id: stock.id, unit_cost: stock.cost, quantity: quantity, time: Time.now)
-            p "Transaction successful! Congratulations, you just purchased #{quantity} shares of #{stock.name}."
+            puts "Transaction successful! Congratulations, you just purchased #{quantity} shares of #{stock.name}.".colorize(:green)
         else
-            p "Transaction has been canceled."
+            puts "Transaction has been canceled.".colorize(:red)
         end
         
         if $prompt.yes?("Would you like to view another stock?")
@@ -108,7 +109,7 @@ $prompt = TTY::Prompt.new
 
     def add_to_watchlist(stock)
         Watchlist.create(user_id: $user_object.id, stock_id: stock.id)
-        p "This stock has been added to your watchlist!"
+        puts "This stock has been added to your watchlist!".colorize(:green)
         what_next
     end
 
@@ -116,7 +117,7 @@ $prompt = TTY::Prompt.new
         result = $user_object.transactions.map {|t| t.unit_cost * t.quantity}
         total_cost = result.map {|t| t.round(2)}
         total_costs = total_cost.join(', $')
-        p "Your previous transaction totals are as follows: $#{total_costs}. You have spent a total of $#{total_costs.sum}."
+        puts "Your previous transaction totals are as follows: $#{total_costs}. You have spent a total of $#{total_costs.sum}.".colorize(:light_blue)
     end
 
     def my_watchlists
@@ -130,7 +131,7 @@ $prompt = TTY::Prompt.new
             end
         else 
             results = result.join(', ')
-            p "You are currently watching the following stocks: #{results}."
+            puts "You are currently watching the following stocks: #{results}.".colorize(:light_blue)
             what_next
         end
     end
@@ -140,7 +141,7 @@ $prompt = TTY::Prompt.new
         if selection == "Return to the main menu"
             greet_with_name($user_object.name)
         else
-            p "Thank you for using Tricks of the Trade! See you again soon."
+            puts "Thank you for using Tricks of the Trade! See you again soon.".colorize(:light_blue)
         end
     end
 
@@ -149,10 +150,10 @@ $prompt = TTY::Prompt.new
         if selection == "View previous transactions"
             my_transactions
         elsif selection == "View connected email address"
-            p "The email address connected to this account is: #{$user_object.email}"
+            puts "The email address connected to this account is: #{$user_object.email}".colorize(:light_blue)
             what_next
         elsif selection == "Log Off"
-            p "Thank you for using Tricks of the Trade! See you again soon."
+            puts "Thank you for using Tricks of the Trade! See you again soon.".colorize(:light_blue)
         elsif selection == "Return to main menu"
             greet_with_name($user_object.name)
         else
