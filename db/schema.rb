@@ -14,15 +14,15 @@ ActiveRecord::Schema.define(version: 2020_09_08_194757) do
 
   create_table "stocks", force: :cascade do |t|
     t.string "name"
-    t.string "industry"
+    t.string "symbol"
     t.float "cost"
+    t.float "change"
   end
 
   create_table "transactions", force: :cascade do |t|
     t.integer "user_id"
     t.integer "stock_id"
-    t.float "unit_cost"
-    t.integer "quantity"
+    t.float "total"
     t.time "time"
   end
 

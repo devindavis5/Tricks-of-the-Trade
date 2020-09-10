@@ -2,16 +2,7 @@ require 'pry'
 $prompt = TTY::Prompt.new
 require 'colorize'
 require 'alphavantagerb'
-client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
-# client.verbose = true
-# stocks_found = client.search keywords: "MSFT"
-# stocks_found.output
-# stocks_found.stocks[0].name
-# stock = client.stock symbol: "MSFT"
-# stock_quote = stock.quote
-# puts "This stock's price is $#{stock_quote.price}."
-
-
+$client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
     def greet
         puts "Welcome to Tricks of the Trade!".colorize(:light_blue)
         if $prompt.yes?("Do you have an existing account?")
@@ -65,7 +56,7 @@ client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
     end
 
     def login_name_rejected
-        response = $prompt.select("That name does not match an account in our system." ["Try again"], ["Create an account"])
+        response = $prompt.select("That name does not match an account in our system.", ["Try again"], ["Create an account"])
         if response == "Try again"
             user_login
         else
@@ -76,7 +67,7 @@ client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
     def greet_with_name(name)
         selection = $prompt.select("Hello #{name}, please select from the following options:", ["View a stock", "View your watchlist", "View your account information"])
         if selection == "View a stock"
-            stock = $prompt.ask("What stock would you like to view?").capitalize
+            stock = $prompt.ask("What stock would you like to view?")
             get_stock_info(stock)
         elsif selection == "View your watchlist"
             my_watchlists
@@ -85,19 +76,25 @@ client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
         end
     end
 
-    def get_stock_info(name)
-        stock = client.stock symbol: "MSFT"
-        stock_quote = stock.quote
-        puts "The cost of this stock is is $#{stock_quote.price}."
-        stock = Stock.find_by(name: "#{name}")
-        puts "#{name} is in the #{stock.industry} industry with a cost of $#{stock.cost} per share.".colorize(:light_blue)
-        purchase = $prompt.yes?("Would you like to purchase this stock?")
-        if purchase
-            purchase_stock(stock)
-        elsif $prompt.yes?("Would you like to add this stock to your watchlist?")
-            add_to_watchlist(stock)
+    def get_stock_info(stock_input)
+        stocks_found = $client.search keywords: stock_input
+        if stocks_found.stocks[0] == nil
+            stock_input2 = $prompt.ask("We're sorry, we could not locate the stock you entered, please re-enter a stock name or symbol:")
+            get_stock_info(stock_input2)
         else
-            what_next
+            stock_symbol = stocks_found.stocks[0].symbol
+            stock = $client.stock symbol: stock_symbol
+            stock_quote = stock.quote
+            stock_object = Stock.create(name: stocks_found.stocks[0].name, symbol: stock_quote.symbol, cost: stock_quote.price, change: stock_quote.change)
+            puts "The cost of #{stocks_found.stocks[0].name} stock is $#{stock_quote.price} per share. The percent change since yesterday is #{stock_quote.change_percent}.".colorize(:light_blue)
+            purchase = $prompt.yes?("Would you like to purchase this stock?")
+            if purchase
+                purchase_stock(stock_object)
+            elsif $prompt.yes?("Would you like to add this stock to your watchlist?")
+                add_to_watchlist(stock_object)
+            else
+                what_next
+            end
         end
     end
 
@@ -105,7 +102,7 @@ client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
         quantity = $prompt.ask("Please enter the quantity you would like to purchase.")
         total = (quantity.to_i * stock.cost).round(2)
         if $prompt.yes?("Your total for #{quantity} shares of #{stock.name} comes to $#{total}. Please confirm you would like to proceed.")
-            Transaction.create(user_id: $user_object.id, stock_id: stock.id, unit_cost: stock.cost, quantity: quantity, time: Time.now)
+            Transaction.create(user_id: $user_object.id, stock_id: stock.id, total: total, time: Time.now)
             puts "Transaction successful! Congratulations, you just purchased #{quantity} shares of #{stock.name}.".colorize(:green)
         else
             puts "Transaction has been canceled.".colorize(:red)
@@ -120,17 +117,23 @@ client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
 
     end
 
-    def add_to_watchlist(stock)
-        Watchlist.create(user_id: $user_object.id, stock_id: stock.id)
+    def add_to_watchlist(stock_input)
+        stocks_found = $client.search keywords: stock_input
+        stock_symbol = stocks_found.stocks[0].symbol
+        stock = $client.stock symbol: stock_symbol
+        stock_quote = stock.quote
+        stock_object = Stock.create(name: stocks_found.stocks[0].name, symbol: stock_quote.symbol, cost: stock_quote.price, change: stock_quote.change)
+        Watchlist.create(user_id: $user_object.id, stock_id: stock_object.id)
         puts "This stock has been added to your watchlist!".colorize(:green)
         what_next
     end
 
     def my_transactions
-        result = $user_object.transactions.map {|t| t.unit_cost * t.quantity}
+        result = $user_object.transactions.map {|t| t.total}
         total_cost = result.map {|t| t.round(2)}
         total_costs = total_cost.join(', $')
-        puts "Your previous transaction totals are as follows: $#{total_costs}. You have spent a total of $#{total_costs.sum}.".colorize(:light_blue)
+        puts "Your previous transaction totals are: $#{total_costs}. You have spent a total of $#{total_cost.sum}.".colorize(:light_blue)
+        what_next
     end
 
     def my_watchlists
@@ -171,6 +174,7 @@ client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
             greet_with_name($user_object.name)
         else
             User.find_by(id: $user_object.id).destroy
+            puts "Account successfully deleted. Thank you for using Tricks of the Trade, we hope you come back soon.".colorize(:light_blue)
         end  
     end
 
