@@ -91,7 +91,7 @@ $client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
             if purchase
                 purchase_stock(stock_object)
             elsif $prompt.yes?("Would you like to add this stock to your watchlist?")
-                add_to_watchlist(stock_object)
+                add_to_watchlist_with_stock_object(stock_object)
             else
                 what_next
             end
@@ -117,12 +117,18 @@ $client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
 
     end
 
-    def add_to_watchlist(stock_input)
+    def add_to_watchlist_with_stock_name(stock_input)
         stocks_found = $client.search keywords: stock_input
         stock_symbol = stocks_found.stocks[0].symbol
         stock = $client.stock symbol: stock_symbol
         stock_quote = stock.quote
         stock_object = Stock.create(name: stocks_found.stocks[0].name, symbol: stock_quote.symbol, cost: stock_quote.price, change: stock_quote.change)
+        Watchlist.create(user_id: $user_object.id, stock_id: stock_object.id)
+        puts "This stock has been added to your watchlist!".colorize(:green)
+        what_next
+    end
+
+    def add_to_watchlist_with_stock_object(stock_object)
         Watchlist.create(user_id: $user_object.id, stock_id: stock_object.id)
         puts "This stock has been added to your watchlist!".colorize(:green)
         what_next
@@ -140,15 +146,20 @@ $client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
         result = $user_object.watchlists.map {|t| t.stock.name}
         if result == []
             if $prompt.yes?("You are not currently watching any stocks. Would you like to add a stock to your watchlist?")
-                stock = $prompt.ask("What stock would you like to add to your watchlist?").capitalize
-                add_to_watchlist(stock)
+                stock = $prompt.ask("What stock would you like to add to your watchlist?")
+                add_to_watchlist_with_stock_name(stock)
             else
                 what_next
             end
         else 
             results = result.join(', ')
             puts "You are currently watching the following stocks: #{results}.".colorize(:light_blue)
-            what_next
+            if $prompt.yes?("Would you like to add another stock to your watchlist?")
+                stock = $prompt.ask("What stock would you like to add to your watchlist?")
+                add_to_watchlist_with_stock_name(stock)
+            else
+                what_next
+            end
         end
     end
 
