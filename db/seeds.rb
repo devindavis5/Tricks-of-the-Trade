@@ -7,6 +7,7 @@ jeff = User.create(name: "Jeff Grove", email: "jgrove@gmail.com", password: "Loc
 don = User.create(name: "Don Drew", email: "ddrew4234@gmail.com", password: "justapiece10349", balance: 210000.00)
 cassie = User.create(name: "Cassie Rivers", email: "casscass65@yahoo.com", password: "valleymountain88", balance: 150000.00)
 andy = User.create(name: "Andy Brind", email: "andytbrind@gmail.com", password: "rosie2002", balance: 200000.00)
+devin = User.create(name: "Devin Davis", email: "devinrdavis555@gmail.com", password: "5", balance: 200000.00)
 
 s1 = Stock.create(name: "Facebook", industry: "information technology", cost: 271.16)
 s2 = Stock.create(name: "Amazon", industry: "e-commerce", cost: 3149.84)
