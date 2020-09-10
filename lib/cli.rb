@@ -26,6 +26,13 @@ $client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
         greet_with_name(user_name)
     end
 
+    def add_funds(amount)
+        $user_object.balance += amount
+        $user_object.save
+        puts "You have successfully added $#{amount} to your account. Your new account balance is $#{$user_object.balance}.".colorize(:green)
+        what_next
+    end
+
     def user_login
         user_full_name = $prompt.ask("Please enter your full name:")
         $user_object = User.find_by(name: user_full_name)
@@ -67,7 +74,7 @@ $client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
     def greet_with_name(name)
         selection = $prompt.select("Hello #{name}, please select from the following options:", ["View a stock", "View your watchlist", "View your account information"])
         if selection == "View a stock"
-            stock = $prompt.ask("What stock would you like to view?")
+            stock = $prompt.ask("What stock do you want to view?")
             get_stock_info(stock)
         elsif selection == "View your watchlist"
             my_watchlists
@@ -87,10 +94,10 @@ $client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
             stock_quote = stock.quote
             stock_object = Stock.create(name: stocks_found.stocks[0].name, symbol: stock_quote.symbol, cost: stock_quote.price, change: stock_quote.change)
             puts "The cost of #{stocks_found.stocks[0].name} stock is $#{stock_quote.price} per share. The percent change since yesterday is #{stock_quote.change_percent}.".colorize(:light_blue)
-            purchase = $prompt.yes?("Would you like to purchase this stock?")
+            purchase = $prompt.yes?("Do you want to purchase this stock?")
             if purchase
                 purchase_stock(stock_object)
-            elsif $prompt.yes?("Would you like to add this stock to your watchlist?")
+            elsif $prompt.yes?("Do you want to add this stock to your watchlist?")
                 add_to_watchlist_with_stock_object(stock_object)
             else
                 what_next
@@ -99,22 +106,35 @@ $client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
     end
 
     def purchase_stock(stock)
-        quantity = $prompt.ask("Please enter the quantity you would like to purchase.")
+        quantity = $prompt.ask("Please enter the quantity you want to purchase.")
         total = (quantity.to_i * stock.cost).round(2)
-        if $prompt.yes?("Your total for #{quantity} shares of #{stock.name} comes to $#{total}. Please confirm you would like to proceed.")
-            Transaction.create(user_id: $user_object.id, stock_id: stock.id, total: total, time: Time.now)
-            puts "Transaction successful! Congratulations, you just purchased #{quantity} shares of #{stock.name}.".colorize(:green)
+        if $prompt.yes?("Your total for #{quantity} shares of #{stock.name} comes to $#{total}. Please confirm you want to proceed.")
+            if total > $user_object.balance
+                if $prompt.yes?("The total of this transaction exceeds your account balance. Do you want to add funds?")
+                    amount = $prompt.ask("Please enter an amount to add to your account.").to_f
+                    if amount == nil
+                        puts "The amount you entered could not be read. Returning you to your account information.".colorize(:red)
+                        my_account
+                    else
+                        add_funds(amount)
+                    end
+                else
+                    puts "Transaction has been canceled.".colorize(:red)
+                end
+            else
+                Transaction.create(user_id: $user_object.id, stock_id: stock.id, total: total, time: Time.now)
+                puts "Transaction successful! Congratulations, you just purchased #{quantity} shares of #{stock.name}.".colorize(:green)
+            end
         else
             puts "Transaction has been canceled.".colorize(:red)
         end
         
-        if $prompt.yes?("Would you like to view another stock?")
+        if $prompt.yes?("Do you want to view another stock?")
             stock = $prompt.ask("What stock are you interested in viewing?")
             get_stock_info(stock)
         else
             what_next
         end
-
     end
 
     def add_to_watchlist_with_stock_name(stock_input)
@@ -145,7 +165,7 @@ $client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
     def my_watchlists
         result = $user_object.watchlists.map {|t| t.stock.name}
         if result == []
-            if $prompt.yes?("You are not currently watching any stocks. Would you like to add a stock to your watchlist?")
+            if $prompt.yes?("You are not currently watching any stocks. Do you want to add a stock to your watchlist?")
                 stock = $prompt.ask("What stock would you like to add to your watchlist?")
                 add_to_watchlist_with_stock_name(stock)
             else
@@ -154,7 +174,7 @@ $client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
         else 
             results = result.join(', ')
             puts "You are currently watching the following stocks: #{results}.".colorize(:light_blue)
-            if $prompt.yes?("Would you like to add another stock to your watchlist?")
+            if $prompt.yes?("Do you want to add another stock to your watchlist?")
                 stock = $prompt.ask("What stock would you like to add to your watchlist?")
                 add_to_watchlist_with_stock_name(stock)
             else
@@ -169,13 +189,26 @@ $client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
             greet_with_name($user_object.name)
         else
             puts "Thank you for using Tricks of the Trade! See you again soon.".colorize(:light_blue)
+            exit!
         end
     end
 
     def my_account
-        selection = $prompt.select("Account options for #{$user_object.name}:", ["View previous transactions", "View connected email address", "Return to main menu", "Log Off", "Delete Account"])
+        selection = $prompt.select("Account options for #{$user_object.name}:", ["View previous transactions", "View account balance", "View connected email address", "Return to main menu", "Log Off", "Delete Account"])
         if selection == "View previous transactions"
             my_transactions
+        elsif selection == "View account balance"
+            if $prompt.yes?("Your account balance is $#{$user_object.balance}. Do you want to add funds?")
+                amount = $prompt.ask("Please enter an amount to add to your account.").to_f
+                if amount == nil
+                    puts "The amount you entered could not be read. Returning you to your account information.".colorize(:red)
+                    my_account
+                else
+                    add_funds(amount)
+                end
+            else
+                my_account
+            end
         elsif selection == "View connected email address"
             puts "The email address connected to this account is: #{$user_object.email}".colorize(:light_blue)
             what_next
