@@ -1,6 +1,16 @@
 require 'pry'
 $prompt = TTY::Prompt.new
 require 'colorize'
+require 'alphavantagerb'
+client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
+# client.verbose = true
+# stocks_found = client.search keywords: "MSFT"
+# stocks_found.output
+# stocks_found.stocks[0].name
+# stock = client.stock symbol: "MSFT"
+# stock_quote = stock.quote
+# puts "This stock's price is $#{stock_quote.price}."
+
 
     def greet
         puts "Welcome to Tricks of the Trade!".colorize(:light_blue)
@@ -76,6 +86,9 @@ require 'colorize'
     end
 
     def get_stock_info(name)
+        stock = client.stock symbol: "MSFT"
+        stock_quote = stock.quote
+        puts "The cost of this stock is is $#{stock_quote.price}."
         stock = Stock.find_by(name: "#{name}")
         puts "#{name} is in the #{stock.industry} industry with a cost of $#{stock.cost} per share.".colorize(:light_blue)
         purchase = $prompt.yes?("Would you like to purchase this stock?")
