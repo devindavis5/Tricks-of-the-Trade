@@ -104,7 +104,7 @@ $client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
             end
         end
     end
-s
+    
     def purchase_stock(stock)
         quantity = $prompt.ask("Please enter the quantity you want to purchase.")
         total = (quantity.to_i * stock.cost).round(2)
