@@ -104,7 +104,7 @@ $client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
             end
         end
     end
-    
+
     def purchase_stock(stock)
         quantity = $prompt.ask("Please enter the quantity you want to purchase.")
         total = (quantity.to_i * stock.cost).round(2)
@@ -241,6 +241,7 @@ $client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
         else
             User.find_by(id: $user_object.id).destroy
             puts "Account successfully deleted. Thank you for using Tricks of the Trade, we hope you come back soon.".colorize(:light_blue)
+            exit!
         end  
     end
 
