@@ -21,7 +21,6 @@ $client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
         while user_balance.to_f < 10.00 do
             user_balance = $prompt.ask("Please enter an amount of $10.00 or more.")
         end
-            
         $user_object = User.create(name: user_full_name, email: user_email, password: user_password, balance: user_balance)
         greet_with_name(user_name)
     end
@@ -29,6 +28,7 @@ $client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
     def add_funds(amount)
         $user_object.balance += amount
         $user_object.save
+        $user_object.reload
         puts "You have successfully added $#{amount} to your account. Your new account balance is $#{$user_object.balance}.".colorize(:green)
         what_next
     end
@@ -123,7 +123,10 @@ $client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
                 end
             else
                 Transaction.create(user_id: $user_object.id, stock_id: stock.id, total: total, time: Time.now)
-                puts "Transaction successful! Congratulations, you just purchased #{quantity} shares of #{stock.name}.".colorize(:green)
+                $user_object.balance -= total
+                $user_object.save
+                $user_object.reload
+                puts "Transaction successful! Congratulations, you just purchased #{quantity} shares of #{stock.name}. Your remaining account balance is #{$user_object.balance} ".colorize(:green)
             end
         else
             puts "Transaction has been canceled.".colorize(:red)
@@ -144,13 +147,26 @@ $client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
         stock_quote = stock.quote
         stock_object = Stock.create(name: stocks_found.stocks[0].name, symbol: stock_quote.symbol, cost: stock_quote.price, change: stock_quote.change)
         Watchlist.create(user_id: $user_object.id, stock_id: stock_object.id)
+        $user_object.reload
         puts "This stock has been added to your watchlist!".colorize(:green)
         what_next
     end
 
     def add_to_watchlist_with_stock_object(stock_object)
         Watchlist.create(user_id: $user_object.id, stock_id: stock_object.id)
+        $user_object.reload
         puts "This stock has been added to your watchlist!".colorize(:green)
+        what_next
+    end
+
+    def my_stocks
+        result = $user_object.stocks.map {|t| t.name}
+        if result == []
+            puts "You do not currently own any stocks.".colorize(:red)
+        else 
+            results = result.join(', ')
+            puts "You currently own the following stocks: #{results}.".colorize(:light_blue)
+        end
         what_next
     end
 
@@ -158,7 +174,11 @@ $client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
         result = $user_object.transactions.map {|t| t.total}
         total_cost = result.map {|t| t.round(2)}
         total_costs = total_cost.join(', $')
-        puts "Your previous transaction totals are: $#{total_costs}. You have spent a total of $#{total_cost.sum}.".colorize(:light_blue)
+        if result == []
+            puts "You have not yet made any transactions.".colorize(:red)
+        else
+            puts "Your previous transaction totals are: $#{total_costs}. You have spent a total of $#{total_cost.sum}.".colorize(:light_blue)
+        end
         what_next
     end
 
@@ -194,9 +214,11 @@ $client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
     end
 
     def my_account
-        selection = $prompt.select("Account options for #{$user_object.name}:", ["View previous transactions", "View account balance", "View connected email address", "Return to main menu", "Log Off", "Delete Account"])
+        selection = $prompt.select("Account options for #{$user_object.name}:", ["View owned stocks", "View previous transactions", "View account balance", "View connected email address", "Return to main menu", "Log Off", "Delete Account"])
         if selection == "View previous transactions"
             my_transactions
+        elsif selection == "View owned stocks"
+            my_stocks
         elsif selection == "View account balance"
             if $prompt.yes?("Your account balance is $#{$user_object.balance}. Do you want to add funds?")
                 amount = $prompt.ask("Please enter an amount to add to your account.").to_f
