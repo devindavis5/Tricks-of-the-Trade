@@ -2,7 +2,7 @@ require 'pry'
 $prompt = TTY::Prompt.new
 require 'colorize'
 require 'alphavantagerb'
-$client = Alphavantage::Client.new key: "Y9WYOMPMM3PQFXOC"
+$client = Alphavantage::Client.new key: XXXXXXXXXXXXX
     def greet
         puts "Welcome to Tricks of the Trade!".colorize(:light_blue)
         if $prompt.yes?("Do you have an existing account?")
